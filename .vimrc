@@ -1,0 +1,1 @@
+/Users/daniel.manary/.spf13-vim-3/.vimrc

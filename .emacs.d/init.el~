@@ -1,0 +1,200 @@
+;; -*- mode: emacs-lisp -*-
+ 
+;; note: in order for flyspell to work, aspell must be installed
+;; $ brew install aspell --lang=en
+;; NOTE: still having issues with flyspell -- need to investigate
+ 
+(require 'package)
+(add-to-list 'package-archives
+             '("elpa" . "http://tromey.com/elpa/"))
+(add-to-list 'package-archives
+             '("marmalade" . "http://marmalade-repo.org/packages/"))
+(package-initialize)
+ 
+(when (not package-archive-contents)
+  (package-refresh-contents))
+ 
+;; Add in your own as you wish:
+(defvar my-packages '(;;starter-kit
+                      clojure-mode find-file-in-project gist paredit
+                      idle-highlight-mode magit org org-magit pyflakes
+                      pylint python-mode python-pep8 ruby-mode yaml-mode
+                      markdown-mode textmate find-things-fast coffee-mode
+                      dired-details dired+ dired-details+ color-theme
+                      color-theme-solarized nrepl
+                      hippie-expand-slime
+                      ess
+                      )
+  "A list of packages to ensure are installed at launch.")
+ 
+(defvar my-autorequire-packages
+  '(starter-kit clojure-mode paredit
+    find-file-in-project hippie-expand-slime
+                color-theme color-theme-solarized)
+  "A list of packages to insure are require'd at launcnh")
+ 
+(dolist (p my-packages)
+  (when (not (package-installed-p p))
+    (package-install p)))
+ 
+;; read in PATH from .bash_profile
+(if (not (getenv "TERM_PROGRAM"))
+  (setenv "PATH"
+    (shell-command-to-string "source $HOME/.bash_profile && printf $PATH")))
+ 
+;; start a single emacs server
+(server-start)
+ 
+(dolist (p my-autorequire-packages)
+  (require p))
+ 
+(require 'dired+)
+(require 'dired-details)
+(require 'dired-details+)
+ 
+(require 'nrepl)
+ 
+(require 'color-theme)
+(require 'color-theme-solarized)
+;;(require 'color-theme-ir-black)
+;;(setq color-theme-is-global nil)
+ 
+(color-theme-solarized-dark)
+ 
+(add-hook 'after-make-frame-functions
+          (lambda (frame)
+             (select-frame frame)
+             (if (window-system frame)
+                 (color-theme-solarized-dark)
+                 (color-theme-ir-black))))
+ 
+;; Enable mouse support in terminal.
+(require 'mouse)
+(xterm-mouse-mode t)
+(global-set-key [mouse-4] '(lambda ()
+                            (interactive)
+                            (scroll-down 1)))
+(global-set-key [mouse-5] '(lambda ()
+                            (interactive)
+                            (scroll-up 1)))
+(defun track-mouse (e))
+(setq mouse-sel-mode t)
+ 
+;; enable textmate minor mode
+(textmate-mode)
+ 
+;; use clojure-mode to edit ClojureScript files
+(add-to-list 'auto-mode-alist '("\.cljs$" . clojure-mode))
+ 
+;; configure the file extensions used by markdown mode
+(setq auto-mode-alist
+  (cons '("\\.md" . markdown-mode) auto-mode-alist))
+(setq auto-mode-alist
+    (cons '("\\.mdown" . markdown-mode) auto-mode-alist))
+(setq auto-mode-alist
+  (cons '("\\.markdown" . markdown-mode) auto-mode-alist))
+ 
+ 
+ 
+;; Add paredit hooks
+(add-hook 'emacs-lisp-mode-hook 'enable-paredit-mode)
+(add-hook 'clojure-mode-hook    'enable-paredit-mode)
+ 
+;; Use visual line mode by default for markdown files.
+(add-hook 'markdown-mode-hook 'turn-off-auto-fill)
+(add-hook 'markdown-mode-hook 'turn-on-visual-line-mode)
+ 
+;; Use visual line mode by default for org files.
+(add-hook 'org-mode-hook 'turn-off-auto-fill)
+(add-hook 'org-mode-hook 'turn-on-visual-line-mode)
+ 
+;; reduce the number of signals that can trigger the alarm bell
+(setq ring-bell-function
+      (lambda ()
+        (unless (memq this-command
+                      '(isearch-abort
+                        abort-recursive-edit
+                        exit-minibuffer
+                        keyboard-quit
+                        up down
+                        previous-line next-line
+                        backward-char forward-char
+                        mwheel-scroll))
+          (ding))))
+ 
+;; move point from window to window using shift and the arrow keys
+(when (fboundp 'windmove-default-keybindings)
+  (windmove-default-keybindings))
+ 
+;; Use org-indent-mode by default
+(add-hook 'org-mode-hook (lambda () (org-indent-mode t)) t)
+ 
+;; display trailing whitespace
+(setq-default show-trailing-whitespace t)
+ 
+;; automatically delete trailing whitespace
+(add-hook 'write-file-hooks 'delete-trailing-whitespace)
+ 
+;; do not scroll dramatically when moving one line at a time
+(setq-default scroll-conservatively 1)
+ 
+;; highlight 80+ for Python
+(add-hook 'python-mode-hook (lambda () (highlight-80+-mode)))
+ 
+;; Enable the menu bar
+(menu-bar-mode t)
+ 
+;; Show column numbers
+(setq column-number-mode t)
+ 
+;; Switch to prev/ next buffer using OS X keybindings
+(global-set-key (kbd "s-{") 'switch-to-prev-buffer)
+(global-set-key (kbd "s-}") 'switch-to-next-buffer)
+ 
+;; misc functions, from emacs-prelude
+;; https://github.com/bbatsov/emacs-prelude/blob/master/modules/prelude-core.el
+ 
+;(defun prelude-google ()
+;  "Googles a query or region if any."
+;  (interactive)
+;  (browse-url
+;   (concat
+;    "http://www.google.com/search?ie=utf-8&oe=utf-8&q="
+;    (if mark-active
+;        (buffer-substring (region-beginning) (region-end))
+;      (read-string "Google: ")))))
+ 
+;(defun prelude-swap-windows ()
+;  "If you have 2 windows, it swaps them."
+;  (interactive)
+;  (if (/= (count-windows) 2)
+;      (message "You need exactly 2 windows to do this.")
+;    (let* ((w1 (first (window-list)))
+;           (w2 (second (window-list)))
+;           (b1 (window-buffer w1))
+;           (b2 (window-buffer w2))
+;           (s1 (window-start w1))
+;           (s2 (window-start w2)))
+;      (set-window-buffer w1 b2)
+;      (set-window-buffer w2 b1)
+;      (set-window-start w1 s2)
+;      (set-window-start w2 s1)))
+;  (other-window 1))
+;
+;
+ 
+;;;
+;;; resizing 'windows' (i.e., inside the frame)
+(global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
+(global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
+(global-set-key (kbd "S-C-<down>") 'shrink-window)
+(global-set-key (kbd "S-C-<up>") 'enlarge-window)
+ 
+;;; Adding some extra niceties
+(global-set-key (kbd "M-/") 'hippie-expand)
+ 
+;;; Emacs speaks statistics (or R-lang)
+;(require 'ess-site)
+ 
+(add-hook 'slime-mode-hook 'set-up-slime-hippie-expand)
+(add-hook 'slime-repl-mode-hook 'set-up-slime-hippie-expand)

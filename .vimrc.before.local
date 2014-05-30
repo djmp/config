@@ -1,0 +1,12 @@
+" Automatically set the rainbow parentheses toggles to on
+au VimEnter * RainbowParenthesesToggle
+au Syntax * RainbowParenthesesLoadRound
+au Syntax * RainbowParenthesesLoadSquare
+au Syntax * RainbowParenthesesLoadBraces
+
+""nnoremap <special> <M-Up> :bnext<CR>
+""nnoremap <special> <M-Down> :bprevious<CR>
+"nnoremap <M-]> gt
+"nnoremap <M-[> gT
+
+let g:undotree_WindowLayout = 4
